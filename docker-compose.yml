@@ -1,0 +1,15 @@
+# Optional Postgres for later. Local v1 uses SQLite via DATABASE_URL.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: assistente
+      POSTGRES_PASSWORD: assistente
+      POSTGRES_DB: assistente
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
