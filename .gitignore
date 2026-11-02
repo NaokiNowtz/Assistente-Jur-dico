@@ -37,6 +37,7 @@ yarn-error.log*
 
 # local data
 /data
+/src/generated/prisma-postgres
 *.db
 prisma/dev.db
 prisma/dev.db-journal

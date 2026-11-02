@@ -4,16 +4,20 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run db:generate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:generate": "prisma generate && prisma generate --schema prisma/postgresql/schema.prisma",
+    "db:migrate:sqlite": "prisma migrate dev",
+    "db:migrate:postgres": "prisma migrate deploy --schema prisma/postgresql/schema.prisma",
+    "postinstall": "npm run db:generate"
   },
   "dependencies": {
-    "@prisma/client": "^7.10.0",
+    "@prisma/client": "6.16.2",
     "next": "16.4.1",
     "openai": "^7.34.0",
     "pdf-parse": "^2.4.5",
-    "prisma": "^8.0.0-rc.23",
+    "prisma": "6.16.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "^4.6.7"

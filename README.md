@@ -33,6 +33,20 @@ Mensagens repetidas pela Meta não avançam a conversa duas vezes. Arquivos fica
    GET http://localhost:3000/api/whatsapp?hub.mode=subscribe&hub.verify_token=change-me-verify-token&hub.challenge=teste
    ```
 
+## Perfil PostgreSQL
+
+O desenvolvimento local continua usando SQLite. Para testar com PostgreSQL, inicie o serviço local do Compose e configure `DATABASE_PROVIDER=postgres` e `DATABASE_URL=postgresql://assistente:assistente@localhost:5432/assistente?schema=public` no `.env`:
+
+```bash
+docker compose up -d db
+npm run db:migrate:postgres
+npm run dev
+```
+
+O cliente PostgreSQL é gerado junto com o cliente SQLite durante a instalação e antes do build. O PostgreSQL do Compose está limitado à máquina local e usa credenciais apenas para desenvolvimento; produção exige credenciais próprias e conexão TLS conforme o provedor escolhido. As bases SQLite e PostgreSQL têm históricos de migração separados e não são sincronizadas automaticamente.
+
+Os arquivos ficam fora de `public/` em `MEDIA_STORAGE_DIR` e são baixados pelo painel somente após autenticação. Em produção, monte nesse caminho um disco persistente privado. Instâncias serverless ou com múltiplas réplicas precisam de armazenamento de objetos privado compatível com S3; esse provedor ainda precisa ser definido antes da implantação.
+
 ## Configuração do WhatsApp Cloud API
 
 Em produção, defina `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` e `WHATSAPP_APP_SECRET`. Cadastre a URL pública HTTPS abaixo no painel da Meta:
@@ -42,6 +56,12 @@ https://seu-dominio.com/api/whatsapp
 ```
 
 `WHATSAPP_APP_SECRET` é obrigatório em produção: sem ele, o webhook rejeita requisições não assinadas.
+
+## Painel do advogado
+
+Acesse `/lawyer` e entre com a senha definida em `LAWYER_PASSWORD`. O painel lista casos por status e urgência, mostra a triagem, histórico e documentos recebidos, e permite salvar notas internas e atualizar o status. A sessão é armazenada em cookie HTTP-only, assinada e expira em 12 horas.
+
+Configure uma senha forte e exclusiva no ambiente antes de expor o painel. O painel não aceita acesso enquanto `LAWYER_PASSWORD` estiver vazio.
 
 ## Integração com Claude Max
 

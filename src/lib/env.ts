@@ -4,7 +4,9 @@ export function env(name: string, fallback = ""): string {
 
 export const config = {
   databaseUrl: env("DATABASE_URL", "file:./prisma/dev.db"),
-  lawyerPassword: env("LAWYER_PASSWORD", "troque-esta-senha"),
+  databaseProvider: env("DATABASE_PROVIDER", "sqlite"),
+  mediaStorageDir: env("MEDIA_STORAGE_DIR", "data/media"),
+  lawyerPassword: env("LAWYER_PASSWORD"),
   whatsapp: {
     verifyToken: env("WHATSAPP_VERIFY_TOKEN", "change-me-verify-token"),
     accessToken: env("WHATSAPP_ACCESS_TOKEN"),

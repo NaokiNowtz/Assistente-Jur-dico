@@ -1,11 +1,14 @@
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
+import { config } from "../env";
 import { describeImageWithLlm, reviewWithLlm } from "./llm";
 import type { Lang, ReviewJson } from "./types";
 
-const MEDIA_DIR = path.join(process.cwd(), "data", "media");
+const MEDIA_DIR = path.resolve(process.cwd(), config.mediaStorageDir);
 
 export async function saveMediaFile(id: string, bytes: Buffer, ext: string): Promise<string> {
+  if (!/^[A-Za-z0-9_-]+$/.test(id)) throw new Error("Invalid media identifier");
+  if (!/^\.(pdf|png|webp|jpg|bin)$/.test(ext)) throw new Error("Invalid media extension");
   await mkdir(MEDIA_DIR, { recursive: true });
   const storagePath = path.join(MEDIA_DIR, `${id}${ext}`);
   await writeFile(storagePath, bytes);
