@@ -8,17 +8,17 @@ datasource db {
 }
 
 model Conversation {
-  id        String    @id @default(cuid())
-  waId      String    @unique
-  language  String    @default("pt-BR")
-  state     String    @default("greeting")
-  consentAt DateTime?
-  intakeJson String   @default("{}")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  messages  Message[]
-  matters   Matter[]
-  documents Document[]
+  id         String     @id @default(cuid())
+  waId       String     @unique
+  language   String     @default("pt-BR")
+  state      String     @default("greeting")
+  consentAt  DateTime?
+  intakeJson String     @default("{}")
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  messages   Message[]
+  matters    Matter[]
+  documents  Document[]
 }
 
 model Message {
@@ -35,14 +35,28 @@ model Message {
 }
 
 model Matter {
-  id             String       @id @default(cuid())
+  id             String         @id @default(cuid())
   conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  status         String       @default("open")
-  intakeJson     String       @default("{}")
+  conversation   Conversation   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  status         String         @default("open")
+  intakeJson     String         @default("{}")
   lawyerNotes    String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  updates        MatterUpdate[]
+}
+
+model MatterUpdate {
+  id         String   @id @default(cuid())
+  matterId   String
+  matter     Matter   @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  title      String
+  details    String
+  source     String   @default("lawyer")
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([matterId, occurredAt])
 }
 
 model Document {

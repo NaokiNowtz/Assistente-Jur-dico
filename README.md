@@ -63,6 +63,8 @@ Acesse `/lawyer` e entre com a senha definida em `LAWYER_PASSWORD`. O painel lis
 
 Configure uma senha forte e exclusiva no ambiente antes de expor o painel. O painel não aceita acesso enquanto `LAWYER_PASSWORD` estiver vazio.
 
+O detalhe de cada caso mantém um histórico separado de andamentos do processo. Cada lançamento registra título, descrição, data e origem, sem se misturar às notas internas ou às mensagens do WhatsApp. Para aplicar a nova tabela em uma base SQLite existente, rode `npm run db:migrate:sqlite`; em PostgreSQL, rode `npm run db:migrate:postgres`.
+
 ## Integração com Claude Max
 
 O Claude Max permite conectar servidores MCP remotos. A próxima etapa é expor um conector MCP com OAuth para que o advogado consulte casos abertos, mensagens, documentos e pendências dentro do Claude.ai.

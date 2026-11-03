@@ -13,6 +13,13 @@ const matterUpdateSchema = z.object({
   lawyerNotes: z.string().trim().max(10_000),
 });
 
+const caseUpdateSchema = z.object({
+  matterId: z.string().cuid(),
+  title: z.string().trim().min(3).max(160),
+  details: z.string().trim().min(3).max(5_000),
+  occurredAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
 async function requireLawyerSession(): Promise<void> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!isValidSession(token)) redirect("/lawyer/login");
@@ -62,4 +69,40 @@ export async function updateMatterAction(formData: FormData): Promise<void> {
   revalidatePath("/lawyer");
   revalidatePath(`/lawyer/cases/${matter.id}`);
   redirect(`/lawyer/cases/${matter.id}?saved=1`);
+}
+
+export async function addMatterUpdateAction(formData: FormData): Promise<void> {
+  await requireLawyerSession();
+  const parsed = caseUpdateSchema.safeParse({
+    matterId: formData.get("matterId"),
+    title: formData.get("title"),
+    details: formData.get("details"),
+    occurredAt: formData.get("occurredAt"),
+  });
+  if (!parsed.success) redirect("/lawyer");
+
+  const occurredAt = new Date(`${parsed.data.occurredAt}T12:00:00.000Z`);
+  if (Number.isNaN(occurredAt.getTime()) || occurredAt.toISOString().slice(0, 10) !== parsed.data.occurredAt) {
+    redirect(`/lawyer/cases/${parsed.data.matterId}?error=update`);
+  }
+
+  const matter = await prisma.matter.findUnique({
+    where: { id: parsed.data.matterId },
+    select: { id: true },
+  });
+  if (!matter) redirect("/lawyer");
+
+  await prisma.matterUpdate.create({
+    data: {
+      matterId: matter.id,
+      title: parsed.data.title,
+      details: parsed.data.details,
+      occurredAt,
+      source: "lawyer",
+    },
+  });
+
+  revalidatePath("/lawyer");
+  revalidatePath(`/lawyer/cases/${matter.id}`);
+  redirect(`/lawyer/cases/${matter.id}?updateSaved=1`);
 }
