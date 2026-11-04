@@ -1,74 +1,125 @@
 # Assistente Jurídico
 
-Triagem inicial de atendimentos jurídicos via WhatsApp. O sistema coleta consentimento, dados básicos do caso e documentos, sem prestar aconselhamento jurídico automático. Ao final da confirmação, cria um caso para revisão humana.
+Aplicação web para receber pedidos de atendimento jurídico pelo WhatsApp, organizar a triagem e permitir que o advogado acompanhe os casos em um painel privado. O sistema apoia o fluxo do escritório; não substitui a análise do advogado nem deve enviar aconselhamento jurídico automatizado ao cliente.
 
-## Fluxo implementado
+## O que o projeto faz
 
-1. A Meta entrega uma mensagem em `POST /api/whatsapp`.
-2. A assinatura `x-hub-signature-256` é validada em produção e cada mensagem é deduplicada pelo ID do WhatsApp.
-3. O cliente aceita o aviso de privacidade, responde à triagem e pode enviar PDF ou imagem.
-4. Conversa, mensagens, documentos e análise preliminar ficam armazenados no SQLite.
-5. Quando confirma os dados, o sistema cria um `Matter` aberto para o advogado.
+- Recebe e valida eventos do WhatsApp Cloud API em `POST /api/whatsapp`, incluindo a assinatura da Meta em produção e a deduplicação de mensagens.
+- Solicita consentimento, coleta dados básicos do caso e aceita documentos PDF e imagens. O limite padrão de arquivo é 10 MB.
+- Mantém conversas, dados de triagem, documentos, notas e casos no banco de dados. A análise de documentos usa OpenAI quando `OPENAI_API_KEY` está configurada e heurísticas locais como fallback.
+- Oferece um painel do advogado em `/lawyer` para revisar os atendimentos, consultar documentos, atualizar o status, salvar notas internas e registrar andamentos em uma linha do tempo.
+- Inclui ferramentas MCP locais para listar casos, consultar detalhes e registrar andamentos. O endpoint MCP ainda não está disponível para conexões remotas do Claude.
 
-Mensagens repetidas pela Meta não avançam a conversa duas vezes. Arquivos ficam em `data/media` e são limitados a 10 MB por padrão.
+## Requisitos
 
-## Desenvolvimento local
+- Node.js 20.9 ou superior e npm.
+- Docker Desktop somente se quiser usar o perfil PostgreSQL local.
+- Credenciais da Meta para testar o WhatsApp real. Sem elas, é possível iniciar a aplicação e testar o painel, mas o envio/recebimento real de mensagens não estará conectado.
 
-1. Copie `.env.example` para `.env` e preencha `LAWYER_PASSWORD`.
-2. Gere/aplique o banco:
+## Instalação e execução local
 
-   ```bash
-   npx prisma migrate dev
-   ```
+No PowerShell, na pasta do projeto:
 
-3. Rode a aplicação:
+```powershell
+Copy-Item .env.example .env
+```
 
-   ```bash
-   npm run dev
-   ```
+Edite `.env` e defina uma senha forte em `LAWYER_PASSWORD`. O arquivo `.env` contém segredos e dados locais; não o envie ao GitHub.
 
-4. Para testar a verificação do webhook:
+Instale as dependências, gere os clientes Prisma e aplique as migrações SQLite:
 
-   ```text
-   GET http://localhost:3000/api/whatsapp?hub.mode=subscribe&hub.verify_token=change-me-verify-token&hub.challenge=teste
-   ```
+```powershell
+npm install
+npm run db:generate
+npm run db:migrate:sqlite
+```
 
-## Perfil PostgreSQL
+Inicie a aplicação:
 
-O desenvolvimento local continua usando SQLite. Para testar com PostgreSQL, inicie o serviço local do Compose e configure `DATABASE_PROVIDER=postgres` e `DATABASE_URL=postgresql://assistente:assistente@localhost:5432/assistente?schema=public` no `.env`:
+```powershell
+npm run dev
+```
 
-```bash
+Abra [http://127.0.0.1:3000](http://127.0.0.1:3000) e entre no painel em [http://127.0.0.1:3000/lawyer](http://127.0.0.1:3000/lawyer), usando a senha configurada em `LAWYER_PASSWORD`. O servidor de desenvolvimento escuta apenas na própria máquina.
+
+O SQLite é o padrão local; os dados ficam em `prisma/dev.db`, e os arquivos recebidos ficam em `MEDIA_STORAGE_DIR` (por padrão, `data/media`). Esses dados podem conter informações pessoais e jurídicas.
+
+## Configuração do WhatsApp
+
+Preencha no `.env` as variáveis `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` e `WHATSAPP_APP_SECRET`. Configure no painel da Meta o webhook para:
+
+```text
+https://SEU_HOST/api/whatsapp
+```
+
+O host precisa ser público e usar HTTPS para receber eventos reais da Meta. `WHATSAPP_APP_SECRET` é obrigatório em produção para validar a assinatura das requisições. O token de verificação também deve ser substituído por um valor privado.
+
+Sem credenciais de WhatsApp, ainda é possível confirmar que a rota de verificação responde localmente:
+
+```text
+http://127.0.0.1:3000/api/whatsapp?hub.mode=subscribe&hub.verify_token=change-me-verify-token&hub.challenge=teste
+```
+
+## IA para análise de documentos
+
+`OPENAI_API_KEY` é opcional. Sem ela, a aplicação continua disponível, mas a leitura/análise automática de documentos usa apenas os recursos heurísticos disponíveis; a leitura de imagens depende da configuração do modelo. A revisão jurídica final continua sendo responsabilidade do advogado.
+
+## Perfil PostgreSQL local
+
+O desenvolvimento padrão usa SQLite. Para iniciar o PostgreSQL de desenvolvimento fornecido pelo Compose:
+
+```powershell
 docker compose up -d db
+```
+
+No `.env`, selecione `DATABASE_PROVIDER="postgres"` e configure `DATABASE_URL` com a conexão local, por exemplo:
+
+```text
+postgresql://assistente:assistente@localhost:5432/assistente?schema=public
+```
+
+Depois aplique as migrações e inicie a aplicação:
+
+```powershell
 npm run db:migrate:postgres
 npm run dev
 ```
 
-O cliente PostgreSQL é gerado junto com o cliente SQLite durante a instalação e antes do build. O PostgreSQL do Compose está limitado à máquina local e usa credenciais apenas para desenvolvimento; produção exige credenciais próprias e conexão TLS conforme o provedor escolhido. As bases SQLite e PostgreSQL têm históricos de migração separados e não são sincronizadas automaticamente.
+As credenciais do Compose são apenas para desenvolvimento. SQLite e PostgreSQL mantêm históricos de migração separados; os dados de um banco não são copiados automaticamente para o outro.
 
-Os arquivos ficam fora de `public/` em `MEDIA_STORAGE_DIR` e são baixados pelo painel somente após autenticação. Em produção, monte nesse caminho um disco persistente privado. Instâncias serverless ou com múltiplas réplicas precisam de armazenamento de objetos privado compatível com S3; esse provedor ainda precisa ser definido antes da implantação.
+## MCP e Claude
 
-## Configuração do WhatsApp Cloud API
+O endpoint local `http://127.0.0.1:3000/api/mcp` oferece estas ferramentas:
 
-Em produção, defina `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` e `WHATSAPP_APP_SECRET`. Cadastre a URL pública HTTPS abaixo no painel da Meta:
+- `list_cases`: lista um resumo dos casos.
+- `get_case_details`: consulta a triagem, os andamentos, metadados de documentos e mensagens recentes. Não retorna arquivos nem caminhos locais.
+- `add_case_update`: registra um andamento informado pelo advogado; a origem é marcada como `mcp`.
 
-```text
-https://seu-dominio.com/api/whatsapp
+Para inspecionar as ferramentas durante o desenvolvimento, execute em outro terminal:
+
+```powershell
+npx @modelcontextprotocol/inspector http://127.0.0.1:3000/api/mcp
 ```
 
-`WHATSAPP_APP_SECRET` é obrigatório em produção: sem ele, o webhook rejeita requisições não assinadas.
+`add_case_update` grava dados no banco. A rota MCP só responde em `NODE_ENV=development` e o servidor local é limitado a `127.0.0.1`; não exponha um servidor de desenvolvimento na internet. O conector remoto do Claude.ai ainda não foi implementado. Antes de habilitá-lo, será necessário escolher hospedagem, publicar um endpoint HTTPS e integrar OAuth com permissões adequadas para leitura e gravação. Não use senha do Claude, cookies ou tokens compartilhados como substituto de OAuth.
 
-## Painel do advogado
+## Verificações de desenvolvimento
 
-Acesse `/lawyer` e entre com a senha definida em `LAWYER_PASSWORD`. O painel lista casos por status e urgência, mostra a triagem, histórico e documentos recebidos, e permite salvar notas internas e atualizar o status. A sessão é armazenada em cookie HTTP-only, assinada e expira em 12 horas.
+```powershell
+npm run lint
+npx tsc --noEmit
+npm run build
+```
 
-Configure uma senha forte e exclusiva no ambiente antes de expor o painel. O painel não aceita acesso enquanto `LAWYER_PASSWORD` estiver vazio.
+O build também gera os clientes Prisma SQLite e PostgreSQL. Ainda falta uma suíte automatizada de integração para os fluxos de WhatsApp, MCP, autenticação e migrações.
 
-O detalhe de cada caso mantém um histórico separado de andamentos do processo. Cada lançamento registra título, descrição, data e origem, sem se misturar às notas internas ou às mensagens do WhatsApp. Para aplicar a nova tabela em uma base SQLite existente, rode `npm run db:migrate:sqlite`; em PostgreSQL, rode `npm run db:migrate:postgres`.
+## Antes de usar em produção
 
-## Integração com Claude Max
+- Escolher domínio e hospedagem com HTTPS.
+- Configurar OAuth para o conector remoto e definir permissões para cada ferramenta MCP.
+- Configurar PostgreSQL gerenciado e armazenamento persistente privado para documentos; não use disco efêmero em hospedagem serverless.
+- Guardar credenciais em um gerenciador de segredos, configurar backups, retenção e controles de acesso aos dados jurídicos.
+- Ligar e validar o WhatsApp Cloud API com as credenciais reais da Meta.
+- Revisar os avisos de rastreamento de filesystem emitidos pelo build e criar testes automatizados antes do lançamento.
 
-O Claude Max permite conectar servidores MCP remotos. A próxima etapa é expor um conector MCP com OAuth para que o advogado consulte casos abertos, mensagens, documentos e pendências dentro do Claude.ai.
-
-Essa configuração precisa de um domínio HTTPS público e de autenticação OAuth; ela não deve usar senha, cookie ou URL secreta do Claude. O Claude.ai e a API da Anthropic são produtos distintos, portanto não é possível inserir atualizações automaticamente em conversas já existentes do advogado.
-
-Enquanto o conector MCP é preparado, os dados que ele consumirá já são persistidos nas tabelas `Matter`, `Conversation`, `Message` e `Document`.
+O Claude Max aceita conectores MCP remotos; isso não significa que a conta Claude esteja conectada ao projeto. A documentação da Anthropic descreve o suporte a Streamable HTTP e OAuth em [conectores MCP remotos](https://support.anthropic.com/en/articles/11503834-building-custom-integrations-via-remote-mcp-servers).
