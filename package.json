@@ -7,18 +7,22 @@
     "build": "npm run db:generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "db:generate": "prisma generate && prisma generate --schema prisma/postgresql/schema.prisma",
+    "db:generate": "prisma generate && prisma generate --config prisma.postgresql.config.ts",
     "db:migrate:sqlite": "prisma migrate dev",
-    "db:migrate:postgres": "prisma migrate deploy --schema prisma/postgresql/schema.prisma",
+    "db:migrate:postgres": "prisma migrate deploy --config prisma.postgresql.config.ts",
     "postinstall": "npm run db:generate"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.4.0",
-    "@prisma/client": "6.16.2",
-    "next": "16.4.1",
+    "@prisma/adapter-better-sqlite3": "^7.10.1",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "dotenv": "^18.0.9",
+    "next": "^16.4.5",
     "openai": "^7.34.0",
     "pdf-parse": "^2.4.5",
-    "prisma": "6.16.2",
+    "pg": "^8.23.1",
+    "prisma": "^7.10.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "^4.6.7"
@@ -27,12 +31,18 @@
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/pdf-parse": "^1.1.5",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.4.1",
+    "eslint-config-next": "^16.4.5",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.1"
+    }
   }
 }

@@ -12,7 +12,7 @@ Aplicação web para receber pedidos de atendimento jurídico pelo WhatsApp, org
 
 ## Requisitos
 
-- Node.js 20.9 ou superior e npm.
+- Node.js 20.19 ou superior e npm (requisito do Prisma ORM 7).
 - Docker Desktop somente se quiser usar o perfil PostgreSQL local.
 - Credenciais da Meta para testar o WhatsApp real. Sem elas, é possível iniciar a aplicação e testar o painel, mas o envio/recebimento real de mensagens não estará conectado.
 

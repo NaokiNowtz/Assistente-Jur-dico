@@ -1,15 +1,19 @@
-import { PrismaClient } from "@prisma/client";
-import { PrismaClient as PostgresPrismaClient } from "@/generated/prisma-postgres";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient as SqlitePrismaClient } from "@/generated/prisma-sqlite/client";
+import { PrismaClient as PostgresPrismaClient } from "@/generated/prisma-postgres/client";
 import { config } from "./env";
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+const globalForPrisma = globalThis as unknown as { prisma?: SqlitePrismaClient };
 
 const client =
   config.databaseProvider === "postgres"
     ? (new PostgresPrismaClient({
-        datasources: { db: { url: config.databaseUrl } },
-      }) as unknown as PrismaClient)
-    : new PrismaClient();
+        adapter: new PrismaPg({ connectionString: config.databaseUrl }),
+      }) as unknown as SqlitePrismaClient)
+    : new SqlitePrismaClient({
+        adapter: new PrismaBetterSqlite3({ url: config.databaseUrl }),
+      });
 
 export const prisma = globalForPrisma.prisma ?? client;
 
