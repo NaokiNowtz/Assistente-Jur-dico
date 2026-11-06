@@ -1,11 +1,24 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isValidSession, passwordMatches, SESSION_COOKIE, SESSION_TTL_SECONDS, sessionToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { allowRequest, resetRequestLimit } from "@/lib/rate-limit";
+
+const LOGIN_ATTEMPT_LIMIT = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+
+async function loginRateLimitKey(): Promise<string> {
+  const requestHeaders = await headers();
+  // In production, the trusted reverse proxy must overwrite these forwarding headers.
+  const ip = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || requestHeaders.get("x-real-ip")?.trim()
+    || "unknown";
+  return `lawyer-login:${ip}`;
+}
 
 const matterUpdateSchema = z.object({
   matterId: z.string().cuid(),
@@ -26,10 +39,16 @@ async function requireLawyerSession(): Promise<void> {
 }
 
 export async function loginAction(formData: FormData): Promise<void> {
+  const rateLimitKey = await loginRateLimitKey();
+  if (!allowRequest(rateLimitKey, LOGIN_ATTEMPT_LIMIT, LOGIN_WINDOW_MS)) {
+    redirect("/lawyer/login?error=locked");
+  }
+
   const password = formData.get("password");
   if (typeof password !== "string" || !passwordMatches(password)) {
     redirect("/lawyer/login?error=1");
   }
+  resetRequestLimit(rateLimitKey);
 
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, sessionToken(), {

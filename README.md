@@ -119,6 +119,7 @@ O build também gera os clientes Prisma SQLite e PostgreSQL. Ainda falta uma su�
 - Configurar OAuth para o conector remoto e definir permissões para cada ferramenta MCP.
 - Configurar PostgreSQL gerenciado e armazenamento persistente privado para documentos; não use disco efêmero em hospedagem serverless.
 - Guardar credenciais em um gerenciador de segredos, configurar backups, retenção e controles de acesso aos dados jurídicos.
+- Colocar o painel atrás de um proxy confiável que substitua `X-Forwarded-For`; o limitador de login atual é em memória e precisa ser substituído por um serviço compartilhado antes de executar múltiplas instâncias.
 - Ligar e validar o WhatsApp Cloud API com as credenciais reais da Meta.
 - Revisar os avisos de rastreamento de filesystem emitidos pelo build e criar testes automatizados antes do lançamento.
 

@@ -13,6 +13,7 @@ export default async function LawyerLoginPage({
   await connection();
   const { error } = await searchParams;
   const configured = config.lawyerPassword.length > 0;
+  const errorCode = Array.isArray(error) ? error[0] : error;
 
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-12 text-slate-900 sm:flex sm:items-center sm:justify-center">
@@ -27,7 +28,7 @@ export default async function LawyerLoginPage({
             O acesso ainda não foi configurado. Defina uma senha forte em <code>LAWYER_PASSWORD</code> no arquivo de ambiente do servidor.
           </p>
         ) : null}
-        {configured && error ? <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">Senha inválida. Tente novamente.</p> : null}
+        {configured && errorCode ? <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{errorCode === "locked" ? "Muitas tentativas. Aguarde 15 minutos antes de tentar novamente." : "Senha inválida. Tente novamente."}</p> : null}
         {configured ? (
           <form action={loginAction} className="mt-7 space-y-5">
             <label className="block text-sm font-medium text-slate-800" htmlFor="password">Senha</label>
