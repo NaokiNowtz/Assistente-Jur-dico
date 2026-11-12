@@ -93,7 +93,7 @@ O arquivo `.railway/railway.ts` descreve o serviço web, PostgreSQL, volume pers
 
 1. Instale e autentique o Railway CLI conforme a [documentação oficial](https://docs.railway.com/cli), crie um projeto Railway para homologação e vincule o diretório local a esse projeto e ambiente.
 2. Confira o projeto/ambiente selecionado e execute `railway config plan` para revisar os recursos que serão criados ou alterados.
-3. Depois de revisar o plano, execute `railway config apply` para aplicar a configuração. Isso cria o PostgreSQL, o serviço web e o volume de 1 GB na região US East.
+3. Depois de revisar o plano, execute `railway config apply` para aplicar a configuração. Isso cria o PostgreSQL, o serviço web e o volume de 500 MB na região US East (limite do plano Trial da Railway).
 4. No serviço web, cadastre os segredos pelo painel Railway: `LAWYER_PASSWORD` e, se for usar as integrações, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET` e `OPENAI_API_KEY`. O código IaC preserva esses valores gerenciados no painel. Não coloque segredos no Git.
 5. Gere um domínio Railway com HTTPS no painel e confira `/api/health`; a resposta esperada é `{"status":"ok"}`. Configure o webhook Meta como `https://SEU_HOST/api/whatsapp` somente quando decidir ativar o WhatsApp.
 

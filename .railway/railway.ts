@@ -8,9 +8,9 @@ import {
   volume,
 } from "railway/iac";
 
-const region = "us-east4-eqdc4a";
+const region = "iad";
 const database = postgres("postgres", { region });
-const media = volume("media", { region, sizeMB: 1024 });
+const media = volume("media", { region, sizeMB: 500 });
 
 export default defineRailway(() =>
   project("assistente-juridico-homologacao", {
