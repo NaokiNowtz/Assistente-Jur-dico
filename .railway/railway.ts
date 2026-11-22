@@ -21,13 +21,14 @@ export default defineRailway(() =>
         source: github("NaokiNowtz/Assistente-Jur-dico", {
           branch: "feat/whatsapp-webhook-flow",
         }),
-        build: { command: "npm run build" },
-        start: { command: "npm run start" },
-        preDeploy: { command: "npm run db:migrate:postgres" },
-        healthcheck: { path: "/api/health", timeout: 300 },
+        build: "npm run build",
+        start: "npm run start",
+        preDeploy: "npm run db:migrate:postgres",
+        healthcheck: "/api/health",
+        healthcheckTimeout: 300,
         replicas: { [region]: 1 },
         volumeMounts: { "/data": media },
-        variables: {
+        env: {
           DATABASE_PROVIDER: "postgres",
           DATABASE_URL: database.env.DATABASE_URL,
           MEDIA_STORAGE_DIR: "/data/media",
